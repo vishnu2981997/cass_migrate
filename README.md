@@ -52,7 +52,7 @@ Assuming that we have cassandra db setup in our system(**windows system**)
    create a new keyspace(DataBase)
    
    ```
-   1. cqlsh -u was_up_bro -P was_up
+   1. cqlsh -u was_up_bro -p was_up
    
    2. CREATE KEYSPACE IF NOT EXISTS rim_jim_cutie_pie WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '3' }
    ```
