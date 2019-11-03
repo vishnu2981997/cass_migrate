@@ -1,0 +1,1 @@
+CREATE TABLE emp2(emp_id int PRIMARY KEY,emp_name text);
