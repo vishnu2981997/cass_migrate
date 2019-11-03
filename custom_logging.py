@@ -9,12 +9,14 @@ import os
 
 class CustomLogging:
 
-    def __init__(self, application_name, env_name):
+    def __init__(self, application_name, env_name, mode):
         self._application_name = application_name
         self._env_name = env_name
+        self._mode = mode
         self._logs_dir = "cassandra_migrate_logging"
         self._time_stamp = time.strftime("%Y%m%d%H%M%S")
-        self._file_name = "{0}_{1}_{2}".format(str(self._time_stamp), self._application_name, self._env_name)
+        self._file_name = "{0}_{1}_{2}_{3}".format(str(self._time_stamp), self._application_name,
+                                                   self._env_name, self._mode)
         self._log_path = self.create_log_file()
         logging.basicConfig(filename=os.path.join(self._log_path, self._file_name + ".log"), level=logging.INFO)
 
