@@ -8,8 +8,15 @@ import os
 
 
 class CustomLogging:
+    """"""
 
     def __init__(self, application_name, env_name, mode):
+        """
+
+        :param application_name:
+        :param env_name:
+        :param mode:
+        """
         self._application_name = application_name
         self._env_name = env_name
         self._mode = mode
@@ -21,6 +28,10 @@ class CustomLogging:
         logging.basicConfig(filename=os.path.join(self._log_path, self._file_name + ".log"), level=logging.INFO)
 
     def create_log_file(self):
+        """
+
+        :return:
+        """
         logs_path = os.path.abspath(self._logs_dir)
         if not os.path.exists(logs_path):
             os.mkdir(logs_path)

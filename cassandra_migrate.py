@@ -10,9 +10,23 @@ from cassandra.policies import DCAwareRoundRobinPolicy
 
 
 class Cassandra:
+    """"""
 
     def __init__(self, host, user_name, password, port, key_space, application_name, env_name,
                  cql_files_path, mode, logger):
+        """
+
+        :param host:
+        :param user_name:
+        :param password:
+        :param port:
+        :param key_space:
+        :param application_name:
+        :param env_name:
+        :param cql_files_path:
+        :param mode:
+        :param logger:
+        """
         self._host = host
         self._user_name = user_name
         self._password = password
@@ -145,6 +159,10 @@ class Cassandra:
         del self._mode
 
     def establish_connection(self):
+        """
+
+        :return:
+        """
         self._log.log("establishing connection with config : " + json.dumps(self.__repr__()))
         try:
             auth_provider = PlainTextAuthProvider(username=self._user_name, password=self._password)
@@ -166,6 +184,10 @@ class Cassandra:
         return False
 
     def initiate_migration(self):
+        """
+
+        :return:
+        """
         try:
             success = False
             self._log.log("migration initiated mode : " + self._mode)
@@ -179,6 +201,10 @@ class Cassandra:
             self._log.log(error=exe)
 
     def create_migration(self):
+        """
+
+        :return:
+        """
         if self.create_migrations_table():
             if self.get_file_names():
                 if self.execute_up_scripts():
@@ -193,6 +219,10 @@ class Cassandra:
         return False
 
     def migrate(self):
+        """
+
+        :return:
+        """
         self.form_migrations_table()
         if self.get_rollback_data():
             if self.execute_down_scripts():
@@ -203,10 +233,18 @@ class Cassandra:
         return False
 
     def form_migrations_table(self):
+        """
+
+        :return:
+        """
         self._log.log("forming migrations table name")
         self._migrations_table_name += "_" + self._application_name + "_" + self._env_name
 
     def create_migrations_table(self):
+        """
+
+        :return:
+        """
         self._log.log("creating migration table")
         try:
             self.form_migrations_table()
@@ -236,6 +274,10 @@ class Cassandra:
         return False
 
     def get_file_names(self):
+        """
+
+        :return:
+        """
         self._log.log("fetching file names")
         self._scripts = glob.glob(
             os.path.join(os.path.join(os.path.abspath("scripts"), self._cql_files_path), "*.cql"))
@@ -246,6 +288,10 @@ class Cassandra:
             return False
 
     def execute_up_scripts(self):
+        """
+
+        :return:
+        """
         self._log.log("executing up scripts")
         script_name = None
         try:
@@ -268,6 +314,10 @@ class Cassandra:
         return False
 
     def create_file_path(self):
+        """
+
+        :return:
+        """
         self._log.log("creating file path")
         migrations_path = os.path.abspath("migrations")
         if not os.path.exists(migrations_path):
@@ -281,15 +331,27 @@ class Cassandra:
         self._file_path = file_path
 
     def create_file_name(self):
+        """
+
+        :return:
+        """
         self._log.log("creating file name")
         self._file_name = time.strftime(
             "%Y%m%d%H%M%S") + "_" + self._application_name + "_" + self._env_name + ".json"
 
     def create_path(self):
+        """
+
+        :return:
+        """
         self._log.log("creating path")
         self._migration_file_path = os.path.join(self._file_path, self._file_name)
 
     def create_file(self):
+        """
+
+        :return:
+        """
         self._log.log("creating file")
         json_data = {"data": []}
         for up_script, down_script in zip(self._up_scripts, self._down_scripts):
@@ -299,16 +361,28 @@ class Cassandra:
             json.dump(json_data, json_data_file, ensure_ascii=False, indent=4)
 
     def store_migration_details(self):
+        """
+
+        :return:
+        """
         self._log.log("storing migration details")
         self.generate_id()
         if self.generate_version():
             self.insert_data()
 
     def generate_id(self):
+        """
+
+        :return:
+        """
         self._log.log("generating id")
         self._id = uuid.uuid4()
 
     def generate_version(self):
+        """
+
+        :return:
+        """
         self._log.log("generating version")
         try:
             self._version = 1
@@ -324,6 +398,10 @@ class Cassandra:
         return False
 
     def insert_data(self):
+        """
+
+        :return:
+        """
         self._log.log("inserting data into migration table")
         try:
             cql = """
@@ -341,11 +419,20 @@ class Cassandra:
 
     @staticmethod
     def read_file(script):
+        """
+
+        :param script:
+        :return:
+        """
         with open(script, "r") as fp:
             data = fp.read()
         return data
 
     def get_rollback_data(self):
+        """
+
+        :return:
+        """
         self._log.log("fetching rollback data")
         try:
             cql = """SELECT * FROM {table} limit 1;"""
@@ -363,6 +450,10 @@ class Cassandra:
         return False
 
     def execute_down_scripts(self):
+        """
+
+        :return:
+        """
         self._log.log("executing down scripts")
         try:
             for script in self._down_scripts[::-1]:
@@ -374,6 +465,10 @@ class Cassandra:
         return False
 
     def update_migration_table(self):
+        """
+
+        :return:
+        """
         self._log.log("updating migration table")
         try:
             cql = """
@@ -387,6 +482,10 @@ class Cassandra:
         return False
 
     def exception_rollback(self):
+        """
+
+        :return:
+        """
         for script in self._success_scripts[::-1]:
             self._session.execute(script)
 
