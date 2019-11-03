@@ -1,4 +1,4 @@
-from cassandra_migrate import Cassandra
+from cass_migrate import Cassandra
 from custom_logging import CustomLogging
 import sys
 
