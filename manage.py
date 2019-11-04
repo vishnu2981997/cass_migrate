@@ -28,7 +28,8 @@ def main():
         "application_name": sys.argv[6],
         "env_name": sys.argv[7],
         "mode": sys.argv[8],
-        "rollback_version" : None
+        "cql_files_path": None,
+        "rollback_version": None,
     }
     if config["mode"] == "up":
         config["cql_files_path"] = sys.argv[9]
@@ -54,6 +55,7 @@ def main():
     )
     if c.establish_connection():
         c.initiate_migration()
+    print(c.response)
 
 
 if __name__ == "__main__":

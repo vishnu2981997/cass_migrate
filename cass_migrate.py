@@ -11,6 +11,7 @@ from cassandra.policies import DCAwareRoundRobinPolicy
 
 class Cassandra:
     """"""
+    response = None
 
     def __init__(self, host, user_name, password, port, key_space, application_name, env_name,
                  cql_files_path, mode, logger, rollback_version=None):
@@ -50,6 +51,7 @@ class Cassandra:
         self._down_scripts = []
         self._success_scripts = []
         self._migrations_table_name = "database_migrations"
+        self.response = {"data": "success"}
 
     @property
     def host(self):
@@ -181,6 +183,7 @@ class Cassandra:
             self._log.log("connection established")
             return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log("Invalid credentials or smthin went wrong", error=str(exe))
         return False
 
@@ -199,6 +202,7 @@ class Cassandra:
             if success:
                 self._log.log("migration success mode : " + self._mode)
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
 
     def create_migration(self):
@@ -278,6 +282,7 @@ class Cassandra:
                 self._session.execute(cql)
             return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -317,7 +322,8 @@ class Cassandra:
                     self._down_scripts.append(down_script)
             return True
         except Exception as exe:
-            print("invalid script : " + script_name + "\nException : " + str(exe))
+            self.response["data"] = str(exe)
+            self._log.log("error in script : " + script_name, error=str(exe))
 
         return False
 
@@ -402,6 +408,7 @@ class Cassandra:
                 self._version = version
             return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -422,6 +429,7 @@ class Cassandra:
             self._session.execute(cql)
             return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -457,6 +465,7 @@ class Cassandra:
                 self._log.log("No migrations to perform migration")
                 return False
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -488,6 +497,7 @@ class Cassandra:
                 self._log.log("invalid version")
                 return False
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -503,6 +513,7 @@ class Cassandra:
                 self._success_scripts.append(script)
             return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
@@ -526,6 +537,7 @@ class Cassandra:
                 self._session.execute(cql)
                 return True
         except Exception as exe:
+            self.response["data"] = str(exe)
             self._log.log(error=exe)
         return False
 
