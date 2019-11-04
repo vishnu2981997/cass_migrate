@@ -72,7 +72,7 @@ Assuming that we have cassandra db setup in our system(**windows system**)
    and execute the followin cmd
    
    ```
-   python manage.py host user_name password port key_space application_name env_name cql_files_path mode
+   python manage.py host user_name password port key_space application_name env_name mode cql_files_path
    ```
    
    **eg :**
@@ -80,14 +80,21 @@ Assuming that we have cassandra db setup in our system(**windows system**)
    for creating a migration ie. up set **mode** as **up**
    
    ```
-   python manage.py 127.0.0.1 was_up_bro was_up 9042 rim_jim_cutie_pie app_1 dev test_1 up
+   python manage.py 127.0.0.1 was_up_bro was_up 9042 rim_jim_cutie_pie app_1 dev up test_1 
    ```
    
    for goin back to a previous version i.e down set **mode** as **down**
    
    ```
-   python manage.py 127.0.0.1 was_up_bro was_up 9042 rim_jim_cutie_pie app_1 dev test_1 down
+   python manage.py 127.0.0.1 was_up_bro was_up 9042 rim_jim_cutie_pie app_1 dev down
    ```
+   for migrating to a desired version specify the version number after the **mode**
+   
+   ```
+   python manage.py 127.0.0.1 was_up_bro was_up 9042 rim_jim_cutie_pie app_1 dev down 1
+   ```
+   
+   assuming we have 3 migrations and we want to migrate to version 1 the above down command works
    
    down can only be performed if there is a successful up that has been performed on the specified keyspace
    

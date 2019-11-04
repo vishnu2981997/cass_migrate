@@ -1,1 +1,1 @@
-CREATE TABLE emp3(emp_id int PRIMARY KEY,emp_name text);
+CREATE TABLE emp5(emp_id int PRIMARY KEY,emp_name text);

@@ -1,1 +1,1 @@
-DROP TABLE emp1;
+DROP TABLE emp3;

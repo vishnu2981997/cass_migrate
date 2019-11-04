@@ -13,7 +13,7 @@ class Cassandra:
     """"""
 
     def __init__(self, host, user_name, password, port, key_space, application_name, env_name,
-                 cql_files_path, mode, logger):
+                 cql_files_path, mode, logger, rollback_version=None):
         """
 
         :param host:
@@ -37,6 +37,7 @@ class Cassandra:
         self._cql_files_path = cql_files_path
         self._mode = mode
         self._log = logger
+        self._rollback_version = rollback_version
         self._session = None
         self._file_path = None
         self._file_name = None
@@ -224,7 +225,14 @@ class Cassandra:
         :return:
         """
         self.form_migrations_table()
-        if self.get_rollback_data():
+        if self._rollback_version:
+            if self.get_rollback_data_multiple():
+                if self.execute_down_scripts():
+                    self.update_migration_table()
+                    return True
+                else:
+                    self.exception_rollback()
+        elif self.get_rollback_data():
             if self.execute_down_scripts():
                 self.update_migration_table()
                 return True
@@ -263,8 +271,8 @@ class Cassandra:
                         version int,
                         name text,
                         content text,
-                        PRIMARY KEY (id, version)
-                    ) WITH CLUSTERING ORDER BY (version DESC);
+                        PRIMARY KEY (id)
+                    );
                     """
                 cql = cql.format(table=self._migrations_table_name)
                 self._session.execute(cql)
@@ -386,11 +394,11 @@ class Cassandra:
         self._log.log("generating version")
         try:
             self._version = 1
-            cql = """SELECT * FROM {table} limit 1;"""
+            cql = """SELECT MAX(version) FROM {table};"""
             cql = cql.format(table=self._migrations_table_name)
             data = self._session.execute(cql).current_rows
-            if data:
-                version = data[0].version + 1
+            if data[0][0]:
+                version = data[0][0] + 1
                 self._version = version
             return True
         except Exception as exe:
@@ -435,15 +443,49 @@ class Cassandra:
         """
         self._log.log("fetching rollback data")
         try:
-            cql = """SELECT * FROM {table} limit 1;"""
+            cql = """SELECT MAX(version) FROM {table};"""
             cql = cql.format(table=self._migrations_table_name)
             data = self._session.execute(cql).current_rows
+            cql = """SELECT * FROM {table} WHERE version={version_number} ALLOW FILTERING;"""
+            cql = cql.format(table=self._migrations_table_name, version_number=data[0][0])
+            data = self._session.execute(cql).current_rows
             if data:
-                self._down_scripts = [i["down_script"] for i in json.loads(data[0].content)["data"]]
-                self._id = data[0].id
+                self._down_scripts = [i["down_script"] for i in json.loads(data[-1].content)["data"]]
+                self._id = data[-1].id
                 return True
             else:
                 self._log.log("No migrations to perform migration")
+                return False
+        except Exception as exe:
+            self._log.log(error=exe)
+        return False
+
+    def get_rollback_data_multiple(self):
+        self._log.log("fetching rollback data")
+        try:
+            cql = """SELECT MAX(version) FROM {table};"""
+            cql = cql.format(table=self._migrations_table_name)
+            data = self._session.execute(cql).current_rows
+            cql = """SELECT * FROM {table} WHERE version={version_number} ALLOW FILTERING;"""
+            cql = cql.format(table=self._migrations_table_name, version_number=data[0][0])
+            data = self._session.execute(cql).current_rows
+            if data:
+                if int(data[-1].version) > self._rollback_version:
+                    temp_scripts = []
+                    temp_ids = []
+                    for i in range(int(data[-1].version), int(data[-1].version) - self._rollback_version - 1, -1):
+                        cql = """SELECT * FROM {table} WHERE version={version_number} ALLOW FILTERING;"""
+                        cql = cql.format(table=self._migrations_table_name, version_number=i)
+                        data = self._session.execute(cql).current_rows
+                        scripts = [i["down_script"] for i in json.loads(data[0].content)["data"]]
+                        temp_scripts += scripts[::-1]
+                        temp_ids.append(data[0].id)
+                    self._down_scripts = temp_scripts[::-1]
+                    self._id = temp_ids
+                    return True
+                return False
+            else:
+                self._log.log("invalid version")
                 return False
         except Exception as exe:
             self._log.log(error=exe)
@@ -474,9 +516,15 @@ class Cassandra:
             cql = """
                 DELETE FROM {table} WHERE id={migration_id};
             """
-            cql = cql.format(table=self._migrations_table_name, migration_id=self._id)
-            self._session.execute(cql)
-            return True
+            if self._rollback_version:
+                for migration_id in self._id:
+                    cql = cql.format(table=self._migrations_table_name, migration_id=migration_id)
+                    self._session.execute(cql)
+                return True
+            else:
+                cql = cql.format(table=self._migrations_table_name, migration_id=self._id)
+                self._session.execute(cql)
+                return True
         except Exception as exe:
             self._log.log(error=exe)
         return False

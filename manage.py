@@ -27,9 +27,14 @@ def main():
         "key_space": sys.argv[5],
         "application_name": sys.argv[6],
         "env_name": sys.argv[7],
-        "cql_files_path": sys.argv[8],
-        "mode": sys.argv[9],
+        "mode": sys.argv[8],
+        "rollback_version" : None
     }
+    if config["mode"] == "up":
+        config["cql_files_path"] = sys.argv[9]
+    elif config["mode"] == "down":
+        if len(sys.argv) == 10:
+            config["rollback_version"] = int(sys.argv[9])
     c = Cassandra(
         host=config["host"],
         user_name=config["user_name"],
@@ -40,7 +45,12 @@ def main():
         env_name=config["env_name"],
         cql_files_path=config["cql_files_path"],
         mode=config["mode"],
-        logger=CustomLogging(application_name=config["application_name"], env_name=config["env_name"], mode=config["mode"])
+        logger=CustomLogging(
+            application_name=config["application_name"],
+            env_name=config["env_name"],
+            mode=config["mode"]
+        ),
+        rollback_version=config["rollback_version"]
     )
     if c.establish_connection():
         c.initiate_migration()
