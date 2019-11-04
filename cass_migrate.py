@@ -12,7 +12,9 @@ from parsers import parse_cql
 
 
 class Cassandra:
-    """"""
+    """
+
+    """
     response = None
 
     def __init__(self, host, user_name, password, port, key_space, application_name, env_name,
@@ -541,13 +543,21 @@ class Cassandra:
         """
         self._log.log("updating migration table")
         try:
-            cql = """
-                DELETE FROM {table} WHERE id={migration_id};
-            """
+            cql_begin = """
+                BEGIN BATCH
+                """
+            cql_end = """
+                APPLY BATCH ;
+                """
             if self._rollback_version:
                 for migration_id in self._id:
+                    cql = """
+                        DELETE FROM {table} WHERE id={migration_id};
+                        """
                     cql = cql.format(table=self._migrations_table_name, migration_id=migration_id)
-                    self._session.execute(cql)
+                    cql_begin += cql
+                cql_begin += cql_end
+                self._session.execute(cql_begin)
                 return True
             else:
                 cql = cql.format(table=self._migrations_table_name, migration_id=self._id)

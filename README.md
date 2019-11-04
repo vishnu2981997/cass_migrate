@@ -17,7 +17,7 @@ Assuming that we have cassandra db setup in our system(**windows system**)
    
    **C:\Users\USER\Downloads\apache-cassandra-3.11.4\conf**
    
-   change the value of **authorizer** to **AllowAllAuthorizer**
+   change the value of **authorizer** to **AllowAllAuthorizer** in **cassandra.yaml**
    
    i.e **authorizer: AllowAllAuthorizer**
 
