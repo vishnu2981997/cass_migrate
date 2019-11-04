@@ -7,6 +7,7 @@ import uuid
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import Cluster
 from cassandra.policies import DCAwareRoundRobinPolicy
+from parsers import parse_cql
 
 
 class Cassandra:
@@ -312,6 +313,7 @@ class Cassandra:
                 script_name = script.split("\\")[-1]
                 if not script_name.endswith("_rollback.cql"):
                     up_script = self.read_file(script)
+                    up_script = parse_cql(up_script)
                     self._up_scripts.append(up_script)
                     self._session.execute(up_script)
                     self._success_scripts.append(up_script)
@@ -319,6 +321,7 @@ class Cassandra:
                     base_path = "\\".join(i for i in script.split("\\")[:len(script.split("\\")) - 1])
                     script = os.path.join(base_path, down_script)
                     down_script = self.read_file(script)
+                    down_script = parse_cql(down_script)
                     self._down_scripts.append(down_script)
             return True
         except Exception as exe:
