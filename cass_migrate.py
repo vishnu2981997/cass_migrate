@@ -299,9 +299,12 @@ class Cassandra:
         self._log.log("fetching file names")
         self._scripts = glob.glob(
             os.path.join(os.path.join(os.path.abspath("scripts"), self._cql_files_path), "*.cql"))
-        if self._scripts:
+        temp = glob.glob(
+            os.path.join(os.path.join(os.path.abspath("scripts"), self._cql_files_path), "*_processed.cql"))
+        if self._scripts and len(self._scripts) > len(temp):
             return True
         else:
+            self.response["data"] = "No unprocessed scripts in the specified path or path might be wrong"
             self._log.log("No scripts in the specified path or path might be wrong")
             return False
 
