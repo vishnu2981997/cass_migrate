@@ -7,6 +7,7 @@ import uuid
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import Cluster
 from cassandra.policies import DCAwareRoundRobinPolicy
+
 from parsers import parse_cql
 
 
@@ -28,6 +29,7 @@ class Cassandra:
         :param cql_files_path:
         :param mode:
         :param logger:
+        :param rollback_version:
         """
         self._host = host
         self._user_name = user_name
@@ -51,6 +53,7 @@ class Cassandra:
         self._up_scripts = []
         self._down_scripts = []
         self._success_scripts = []
+        self._processed_script_names = []
         self._migrations_table_name = "database_migrations"
         self.response = {"data": "success"}
 
@@ -219,6 +222,7 @@ class Cassandra:
                     self.create_path()
                     self.create_file()
                     self.store_migration_details()
+                    self.mark_processed()
                     return True
                 else:
                     self.exception_rollback()
@@ -311,16 +315,23 @@ class Cassandra:
         try:
             for script in self._scripts:
                 script_name = script.split("\\")[-1]
-                if not script_name.endswith("_rollback.cql"):
+                if not script_name.endswith("_rollback.cql") and not script_name.endswith("_processed.cql"):
                     up_script = self.read_file(script)
                     up_script = parse_cql(up_script)
                     self._up_scripts.append(up_script)
                     self._session.execute(up_script)
                     self._success_scripts.append(up_script)
+                    self._processed_script_names.append(script)
                     down_script = script_name.split(".cql")[0] + "_rollback.cql"
                     base_path = "\\".join(i for i in script.split("\\")[:len(script.split("\\")) - 1])
                     script = os.path.join(base_path, down_script)
-                    down_script = self.read_file(script)
+                    try:
+                        down_script = self.read_file(script)
+                        self._processed_script_names.append(script)
+                    except Exception:
+                        self.response["data"] = str("rollback file missing for : " + script_name)
+                        self._log.log("rollback file missing for : " + script_name)
+                        return False
                     down_script = parse_cql(down_script)
                     self._down_scripts.append(down_script)
             return True
@@ -551,6 +562,11 @@ class Cassandra:
         """
         for script in self._success_scripts[::-1]:
             self._session.execute(script)
+
+    def mark_processed(self):
+        for script in self._processed_script_names:
+            base_script = script.split(".cql")[0]
+            os.rename(script, base_script + "_processed.cql")
 
     def __repr__(self):
         return {
